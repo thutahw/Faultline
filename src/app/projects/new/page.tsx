@@ -41,7 +41,7 @@ export default async function NewProjectPage() {
   }
 
   return (
-    <div className="flex flex-col p-12 max-w-7xl mx-auto w-full">
+    <div className="flex flex-col p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full">
       <div className="w-full max-w-xl">
         <h1 className="text-3xl font-bold mb-8">New Project</h1>
         <form action={createProject} className="flex flex-col gap-6">
