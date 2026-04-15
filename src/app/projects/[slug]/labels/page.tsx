@@ -2,11 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import Link from 'next/link'
+import { Trash2 } from 'lucide-react'
 import LabelBadge from '@/components/LabelBadge'
 
 const PRESET_COLORS = [
   '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4',
-  '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280', '#000000',
+  '#3b82f6', '#8b5cf6', '#ec4899', '#6b7280', '#1e293b',
 ]
 
 export default async function LabelsPage({
@@ -74,77 +75,73 @@ export default async function LabelsPage({
   }
 
   return (
-    <div className="flex flex-col p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full">
+    <div className="page-container">
       <header className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-          <Link href="/dashboard" className="hover:text-black">Dashboard</Link>
+        <div className="flex items-center gap-1.5 text-sm text-slate-400 mb-3">
+          <Link href="/dashboard" className="hover:text-slate-600 transition-colors">Projects</Link>
           <span>/</span>
-          <Link href={`/projects/${slug}`} className="hover:text-black">{project.name}</Link>
+          <Link href={`/projects/${slug}`} className="hover:text-slate-600 transition-colors">{project.name}</Link>
           <span>/</span>
-          <span className="font-medium text-black">Labels</span>
+          <span className="text-slate-700 font-medium">Labels</span>
         </div>
-        <h1 className="text-3xl font-bold">Labels</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Labels</h1>
+        <p className="text-sm text-slate-500 mt-1">Organize issues with colored labels</p>
       </header>
 
       {isOwner && (
-        <form action={createLabel} className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
-          <h2 className="font-semibold mb-4">Create Label</h2>
+        <form action={createLabel} className="card p-5 mb-6">
+          <h2 className="text-sm font-semibold text-slate-900 mb-4">Create label</h2>
           <div className="flex flex-wrap gap-4 items-end">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="name" className="text-sm font-medium text-gray-700">Name</label>
+            <div className="space-y-1.5 flex-1 min-w-[180px]">
+              <label htmlFor="name" className="label-text">Name</label>
               <input
                 id="name"
                 name="name"
                 type="text"
                 required
-                className="border p-2 rounded text-black"
-                placeholder="e.g. bug, feature"
+                className="input-field"
+                placeholder="e.g. bug, feature, docs"
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-gray-700">Color</label>
-              <div className="flex gap-1">
+            <div className="space-y-1.5">
+              <label className="label-text">Color</label>
+              <div className="flex gap-1.5">
                 {PRESET_COLORS.map((c) => (
                   <label key={c} className="cursor-pointer">
                     <input type="radio" name="color" value={c} className="sr-only peer" defaultChecked={c === '#3b82f6'} />
                     <div
-                      className="w-8 h-8 rounded border-2 border-transparent peer-checked:border-black peer-checked:ring-2 peer-checked:ring-offset-1 peer-checked:ring-black"
+                      className="w-7 h-7 rounded-md border-2 border-transparent peer-checked:ring-2 peer-checked:ring-offset-1 peer-checked:ring-slate-900 transition-all"
                       style={{ backgroundColor: c }}
                     />
                   </label>
                 ))}
               </div>
             </div>
-            <button
-              type="submit"
-              className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition font-bold"
-            >
+            <button type="submit" className="btn-primary text-sm">
               Create
             </button>
           </div>
         </form>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-        <div className="p-4 bg-gray-50 border-b border-gray-200 font-semibold text-gray-700">
-          Labels ({labels?.length || 0})
+      <div className="card overflow-hidden">
+        <div className="px-5 py-3.5 bg-slate-50/50 border-b border-slate-200">
+          <span className="text-sm font-semibold text-slate-700">{labels?.length || 0} labels</span>
         </div>
         {!labels?.length ? (
-          <div className="p-12 text-center text-gray-500">
-            No labels yet. {isOwner ? 'Create one above!' : ''}
+          <div className="px-5 py-16 text-center">
+            <p className="text-sm text-slate-400">No labels yet.{isOwner ? ' Create one above.' : ''}</p>
           </div>
         ) : (
-          <ul className="divide-y divide-gray-200">
+          <ul className="divide-y divide-slate-100">
             {labels.map((label) => (
-              <li key={label.id} className="p-4 flex items-center justify-between">
+              <li key={label.id} className="px-5 py-3 flex items-center justify-between">
                 <LabelBadge name={label.name} color={label.color} />
                 {isOwner && (
                   <form action={deleteLabel}>
                     <input type="hidden" name="labelId" value={label.id} />
-                    <button
-                      type="submit"
-                      className="text-sm text-red-500 hover:text-red-700"
-                    >
+                    <button type="submit" className="btn-danger flex items-center gap-1.5">
+                      <Trash2 size={13} />
                       Delete
                     </button>
                   </form>

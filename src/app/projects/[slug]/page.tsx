@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
-import { Plus, Tag } from 'lucide-react'
+import { Plus, Tag, TrendingUp } from 'lucide-react'
 import RealtimeIssueList from '@/components/RealtimeIssueList'
 
 export default async function ProjectPage({
@@ -31,20 +31,17 @@ export default async function ProjectPage({
     .eq('project_id', project.id)
     .order('created_at', { ascending: false })
 
-  // Fetch labels for each issue
   const { data: issueLabels } = await supabase
     .from('issue_labels')
     .select('issue_id, label:labels(id, name, color)')
     .in('issue_id', (issues || []).map((i) => i.id))
 
-  // Fetch all project labels for filtering
   const { data: projectLabels } = await supabase
     .from('labels')
     .select('id, name, color')
     .eq('project_id', project.id)
     .order('name')
 
-  // Attach labels to issues
   const issuesWithLabels = (issues || []).map((issue) => ({
     ...issue,
     labels: (issueLabels || [])
@@ -53,8 +50,8 @@ export default async function ProjectPage({
       .filter(Boolean),
   }))
 
-  // Compute stats
   const stats = {
+    total: issuesWithLabels.length,
     open: issuesWithLabels.filter((i) => i.status === 'open').length,
     in_progress: issuesWithLabels.filter((i) => i.status === 'in_progress').length,
     resolved: issuesWithLabels.filter((i) => i.status === 'resolved').length,
@@ -62,56 +59,66 @@ export default async function ProjectPage({
   }
 
   return (
-    <div className="flex flex-col p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full">
+    <div className="page-container">
       <header className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-          <Link href="/dashboard" className="hover:text-black">Dashboard</Link>
+        <div className="flex items-center gap-1.5 text-sm text-slate-400 mb-3">
+          <Link href="/dashboard" className="hover:text-slate-600 transition-colors">Projects</Link>
           <span>/</span>
-          <span className="font-medium text-black">{project.name}</span>
+          <span className="text-slate-700 font-medium">{project.name}</span>
         </div>
         <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-bold">{project.name}</h1>
-            <p className="text-gray-600 mt-1">{project.description}</p>
+            <h1 className="text-2xl font-bold text-slate-900">{project.name}</h1>
+            {project.description && (
+              <p className="text-sm text-slate-500 mt-1 leading-relaxed">{project.description}</p>
+            )}
           </div>
-          <div className="flex gap-2">
-            <Link
-              href={`/projects/${slug}/labels`}
-              className="border border-gray-300 text-black px-4 py-2 rounded flex items-center gap-2 hover:bg-gray-50 transition"
-            >
-              <Tag size={18} />
+          <div className="flex gap-2 shrink-0">
+            <Link href={`/projects/${slug}/labels`} className="btn-secondary flex items-center gap-1.5 text-sm">
+              <Tag size={14} />
               Labels
             </Link>
-            <Link
-              href={`/projects/${slug}/issues/new`}
-              className="bg-black text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-gray-800 transition"
-            >
-              <Plus size={18} />
-              New Issue
+            <Link href={`/projects/${slug}/issues/new`} className="btn-primary flex items-center gap-1.5 text-sm">
+              <Plus size={14} />
+              New issue
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-green-600">{stats.open}</div>
-          <div className="text-sm text-gray-500">Open</div>
+      {/* Stats */}
+      {stats.total > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="card px-4 py-3 flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+            <div>
+              <div className="text-lg font-bold text-slate-900">{stats.open}</div>
+              <div className="text-xs text-slate-500">Open</div>
+            </div>
+          </div>
+          <div className="card px-4 py-3 flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-blue-500" />
+            <div>
+              <div className="text-lg font-bold text-slate-900">{stats.in_progress}</div>
+              <div className="text-xs text-slate-500">In Progress</div>
+            </div>
+          </div>
+          <div className="card px-4 py-3 flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-violet-500" />
+            <div>
+              <div className="text-lg font-bold text-slate-900">{stats.resolved}</div>
+              <div className="text-xs text-slate-500">Resolved</div>
+            </div>
+          </div>
+          <div className="card px-4 py-3 flex items-center gap-3">
+            <TrendingUp size={14} className={stats.urgent > 0 ? 'text-rose-500' : 'text-slate-300'} />
+            <div>
+              <div className="text-lg font-bold text-slate-900">{stats.urgent}</div>
+              <div className="text-xs text-slate-500">Urgent</div>
+            </div>
+          </div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-600">{stats.in_progress}</div>
-          <div className="text-sm text-gray-500">In Progress</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-purple-600">{stats.resolved}</div>
-          <div className="text-sm text-gray-500">Resolved</div>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4">
-          <div className="text-2xl font-bold text-red-600">{stats.urgent}</div>
-          <div className="text-sm text-gray-500">Urgent</div>
-        </div>
-      </div>
+      )}
 
       <main>
         <RealtimeIssueList

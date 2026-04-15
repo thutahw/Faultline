@@ -8,7 +8,7 @@ describe('StatusBadge', () => {
     expect(screen.getByText(/open/i)).toBeInTheDocument()
   })
 
-  it('replaces underscores with spaces', () => {
+  it('renders in_progress as In Progress', () => {
     render(<StatusBadge status="in_progress" />)
     expect(screen.getByText(/in progress/i)).toBeInTheDocument()
   })
@@ -16,14 +16,14 @@ describe('StatusBadge', () => {
   it('applies the correct classes for open status', () => {
     render(<StatusBadge status="open" />)
     const badge = screen.getByText(/open/i)
-    expect(badge).toHaveClass('bg-green-100')
-    expect(badge).toHaveClass('text-green-700')
+    expect(badge).toHaveClass('bg-emerald-50')
+    expect(badge).toHaveClass('text-emerald-700')
   })
 
   it('applies the correct classes for in_progress status', () => {
     render(<StatusBadge status="in_progress" />)
     const badge = screen.getByText(/in progress/i)
-    expect(badge).toHaveClass('bg-blue-100')
+    expect(badge).toHaveClass('bg-blue-50')
     expect(badge).toHaveClass('text-blue-700')
   })
 })

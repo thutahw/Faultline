@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { formatDistanceToNow } from 'date-fns'
+import { Send } from 'lucide-react'
 
 type Comment = {
   id: string
@@ -15,11 +16,11 @@ type Comment = {
   } | null
 }
 
-export default function CommentSection({ 
-  issueId, 
+export default function CommentSection({
+  issueId,
   initialComments,
   currentUserId
-}: { 
+}: {
   issueId: string
   initialComments: Comment[]
   currentUserId: string
@@ -41,13 +42,12 @@ export default function CommentSection({
           filter: `issue_id=eq.${issueId}`
         },
         async (payload) => {
-          // Fetch the full comment info including profile
           const { data: comment } = await supabase
             .from('comments')
             .select('*, profiles:profiles(full_name, email)')
             .eq('id', payload.new.id)
             .single()
-          
+
           if (comment) {
             setComments((prev) => [...prev, comment as Comment])
           }
@@ -75,59 +75,79 @@ export default function CommentSection({
 
     if (error) {
       console.error('Error posting comment:', error)
-      alert('Failed to post comment')
     } else {
       setNewComment('')
     }
     setIsSubmitting(false)
   }
 
+  function getInitial(comment: Comment) {
+    return (comment.profiles?.full_name || comment.profiles?.email || '?')[0].toUpperCase()
+  }
+
+  function getColor(name: string) {
+    const colors = [
+      'bg-indigo-100 text-indigo-700',
+      'bg-emerald-100 text-emerald-700',
+      'bg-amber-100 text-amber-700',
+      'bg-rose-100 text-rose-700',
+      'bg-cyan-100 text-cyan-700',
+      'bg-violet-100 text-violet-700',
+    ]
+    let hash = 0
+    for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+    return colors[Math.abs(hash) % colors.length]
+  }
+
   return (
-    <div className="mt-8">
-      <h3 className="text-xl font-bold mb-4">Comments ({comments.length})</h3>
-      
-      <div className="space-y-6 mb-8">
+    <div>
+      <h3 className="text-sm font-semibold text-slate-900 mb-5">
+        Activity <span className="text-slate-400 font-normal">({comments.length})</span>
+      </h3>
+
+      <div className="space-y-4 mb-6">
         {comments.length === 0 ? (
-          <p className="text-gray-500 italic">No comments yet.</p>
+          <p className="text-sm text-slate-400 italic py-4">No comments yet. Start the conversation.</p>
         ) : (
-          comments.map((comment) => (
-            <div key={comment.id} className="flex gap-4">
-              <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 font-bold">
-                {(comment.profiles?.full_name || comment.profiles?.email || '?')[0].toUpperCase()}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-bold text-sm">
-                    {comment.profiles?.full_name || comment.profiles?.email}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                  </span>
+          comments.map((comment) => {
+            const displayName = comment.profiles?.full_name || comment.profiles?.email || 'Unknown'
+            return (
+              <div key={comment.id} className="flex gap-3">
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${getColor(displayName)}`}>
+                  {getInitial(comment)}
                 </div>
-                <div className="bg-white border border-gray-200 rounded-lg p-3 text-black text-sm">
-                  {comment.content}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-sm font-semibold text-slate-900">{displayName}</span>
+                    <span className="text-xs text-slate-400">
+                      {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
+                    </span>
+                  </div>
+                  <div className="text-sm text-slate-700 leading-relaxed bg-slate-50 rounded-lg px-3.5 py-2.5 border border-slate-100">
+                    {comment.content}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <form onSubmit={handleSubmit} className="flex gap-3">
         <textarea
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
-          placeholder="Add a comment..."
-          className="w-full border border-gray-300 rounded-lg p-3 text-sm text-black focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none min-h-[100px]"
+          placeholder="Leave a comment..."
+          className="input-field resize-none min-h-[80px] flex-1"
           disabled={isSubmitting}
         />
-        <div className="flex justify-end">
+        <div className="flex flex-col justify-end">
           <button
             type="submit"
             disabled={isSubmitting || !newComment.trim()}
-            className="bg-black text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-gray-800 transition disabled:opacity-50"
+            className="btn-primary h-10 w-10 !p-0 flex items-center justify-center"
           >
-            {isSubmitting ? 'Posting...' : 'Post Comment'}
+            <Send size={16} />
           </button>
         </div>
       </form>

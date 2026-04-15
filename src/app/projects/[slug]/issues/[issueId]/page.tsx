@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
+import { User, Tag } from 'lucide-react'
 import StatusBadge from '@/components/StatusBadge'
 import LabelBadge from '@/components/LabelBadge'
 import CommentSection from '@/components/CommentSection'
@@ -24,9 +25,7 @@ export default async function IssuePage({
     .eq('id', issueId)
     .single()
 
-  if (issueError || !issue) {
-    notFound()
-  }
+  if (issueError || !issue) notFound()
 
   const { data: comments } = await supabase
     .from('comments')
@@ -34,7 +33,6 @@ export default async function IssuePage({
     .eq('issue_id', issueId)
     .order('created_at', { ascending: true })
 
-  // Fetch labels for this issue
   const { data: issueLabels } = await supabase
     .from('issue_labels')
     .select('label:labels(id, name, color)')
@@ -43,14 +41,12 @@ export default async function IssuePage({
   const currentLabels = (issueLabels || []).map((il) => il.label).filter(Boolean)
   const currentLabelIds = new Set(currentLabels.map((l: any) => l.id))
 
-  // Fetch all project labels
   const { data: projectLabels } = await supabase
     .from('labels')
     .select('id, name, color')
     .eq('project_id', issue.project.id)
     .order('name')
 
-  // Fetch all members for assignee dropdown
   const { data: members } = await supabase
     .from('profiles')
     .select('id, full_name, email')
@@ -59,26 +55,24 @@ export default async function IssuePage({
   const updateLabelsBound = updateLabels.bind(null, issueId, slug)
 
   return (
-    <div className="flex flex-col p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full">
-      <header className="mb-8">
-        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-          <Link href="/dashboard" className="hover:text-black">Dashboard</Link>
+    <div className="page-container">
+      <header className="mb-6">
+        <div className="flex items-center gap-1.5 text-sm text-slate-400 mb-4">
+          <Link href="/dashboard" className="hover:text-slate-600 transition-colors">Projects</Link>
           <span>/</span>
-          <Link href={`/projects/${slug}`} className="hover:text-black">{issue.project.name}</Link>
+          <Link href={`/projects/${slug}`} className="hover:text-slate-600 transition-colors">{issue.project.name}</Link>
           <span>/</span>
-          <span className="font-medium text-black">Issue #{issueId.slice(0, 8)}</span>
+          <span className="text-slate-700 font-medium">#{issueId.slice(0, 8)}</span>
         </div>
-        <div className="flex items-center gap-4 text-sm mb-4">
+        <div className="flex items-center gap-3 flex-wrap">
           <StatusBadge status={issue.status} />
-          <span className="text-gray-500">
-            Priority: <span className="capitalize font-medium text-black">{issue.priority}</span>
-          </span>
-          <span className="text-gray-500">
-            Created by {issue.creator?.full_name || issue.creator?.email} on {new Date(issue.created_at).toLocaleDateString()}
+          <span className="text-xs text-slate-500">
+            Opened by <span className="font-medium text-slate-700">{issue.creator?.full_name || issue.creator?.email}</span>
+            {' '}on {new Date(issue.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
           </span>
         </div>
         {currentLabels.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap mt-3">
             {currentLabels.map((label: any) => (
               <LabelBadge key={label.id} name={label.name} color={label.color} />
             ))}
@@ -86,8 +80,8 @@ export default async function IssuePage({
         )}
       </header>
 
-      <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2">
+      <main className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
           <EditableIssue
             issueId={issueId}
             slug={slug}
@@ -98,25 +92,32 @@ export default async function IssuePage({
             updateIssue={updateIssue}
           />
 
-          <section>
+          <div className="card p-5">
             <CommentSection
               issueId={issueId}
               initialComments={comments as any || []}
               currentUserId={user.id}
             />
-          </section>
+          </div>
         </div>
 
-        <div className="lg:col-span-1 space-y-6">
+        <div className="lg:col-span-1 space-y-4">
           {/* Assignee */}
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-            <h3 className="text-sm font-semibold text-gray-500 uppercase mb-4">Assignee</h3>
-            <form action={updateAssigneeBound} className="flex flex-col gap-2">
-              <select
-                name="assignee_id"
-                defaultValue={issue.assignee_id || ''}
-                className="border p-2 rounded text-black text-sm"
-              >
+          <div className="card p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <User size={14} className="text-slate-400" />
+              <h3 className="section-title">Assignee</h3>
+            </div>
+            {issue.assignee && (
+              <div className="flex items-center gap-2.5 mb-3 p-2 bg-slate-50 rounded-lg">
+                <div className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center">
+                  {(issue.assignee.full_name || issue.assignee.email || '?')[0].toUpperCase()}
+                </div>
+                <span className="text-sm font-medium text-slate-700">{issue.assignee.full_name || issue.assignee.email}</span>
+              </div>
+            )}
+            <form action={updateAssigneeBound} className="space-y-2.5">
+              <select name="assignee_id" defaultValue={issue.assignee_id || ''} className="select-field text-sm">
                 <option value="">Unassigned</option>
                 {members?.map((member) => (
                   <option key={member.id} value={member.id}>
@@ -124,45 +125,36 @@ export default async function IssuePage({
                   </option>
                 ))}
               </select>
-              <button
-                type="submit"
-                className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition text-sm font-bold"
-              >
-                Update Assignee
+              <button type="submit" className="btn-secondary w-full text-sm">
+                Update
               </button>
             </form>
-            {issue.assignee && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-                <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">
-                  {(issue.assignee.full_name || issue.assignee.email || '?')[0].toUpperCase()}
-                </span>
-                {issue.assignee.full_name || issue.assignee.email}
-              </div>
-            )}
           </div>
 
           {/* Labels */}
           {projectLabels && projectLabels.length > 0 && (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase mb-4">Labels</h3>
-              <form action={updateLabelsBound} className="flex flex-col gap-3">
-                {projectLabels.map((label) => (
-                  <label key={label.id} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="labels"
-                      value={label.id}
-                      defaultChecked={currentLabelIds.has(label.id)}
-                      className="rounded"
-                    />
-                    <LabelBadge name={label.name} color={label.color} />
-                  </label>
-                ))}
-                <button
-                  type="submit"
-                  className="bg-black text-white px-4 py-2 rounded hover:bg-gray-800 transition text-sm font-bold mt-1"
-                >
-                  Update Labels
+            <div className="card p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Tag size={14} className="text-slate-400" />
+                <h3 className="section-title">Labels</h3>
+              </div>
+              <form action={updateLabelsBound} className="space-y-3">
+                <div className="space-y-2">
+                  {projectLabels.map((label) => (
+                    <label key={label.id} className="flex items-center gap-2.5 cursor-pointer group py-0.5">
+                      <input
+                        type="checkbox"
+                        name="labels"
+                        value={label.id}
+                        defaultChecked={currentLabelIds.has(label.id)}
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <LabelBadge name={label.name} color={label.color} />
+                    </label>
+                  ))}
+                </div>
+                <button type="submit" className="btn-secondary w-full text-sm">
+                  Update
                 </button>
               </form>
             </div>

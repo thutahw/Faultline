@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { ChevronRight, Filter } from 'lucide-react'
 import StatusBadge from './StatusBadge'
 import LabelBadge from './LabelBadge'
 
@@ -27,6 +28,13 @@ type Issue = {
     email: string
   } | null
   labels: Label[]
+}
+
+const priorityColors: Record<string, string> = {
+  urgent: 'text-rose-600 bg-rose-50',
+  high: 'text-amber-600 bg-amber-50',
+  medium: 'text-blue-600 bg-blue-50',
+  low: 'text-slate-500 bg-slate-50',
 }
 
 export default function RealtimeIssueList({
@@ -86,6 +94,7 @@ export default function RealtimeIssueList({
     }
   }, [supabase, projectId])
 
+  const hasFilters = statusFilter || priorityFilter || labelFilter
   const filtered = issues.filter((issue) => {
     if (statusFilter && issue.status !== statusFilter) return false
     if (priorityFilter && issue.priority !== priorityFilter) return false
@@ -93,41 +102,47 @@ export default function RealtimeIssueList({
     return true
   })
 
+  function getAssigneeInitial(assignee: Issue['assignee']) {
+    if (!assignee) return null
+    return (assignee.full_name || assignee.email || '?')[0].toUpperCase()
+  }
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+    <div className="card overflow-hidden">
       {/* Filter Bar */}
-      <div className="p-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-        <span className="font-semibold text-gray-700">Issues ({filtered.length})</span>
+      <div className="px-5 py-3.5 bg-slate-50/50 border-b border-slate-200 flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Filter size={14} className="text-slate-400" />
+          <span className="text-sm font-semibold text-slate-700">
+            {filtered.length} {filtered.length === 1 ? 'issue' : 'issues'}
+          </span>
+          {hasFilters && (
+            <button
+              onClick={() => { setStatusFilter(''); setPriorityFilter(''); setLabelFilter('') }}
+              className="text-xs text-indigo-600 hover:text-indigo-700 font-medium ml-1"
+            >
+              Clear filters
+            </button>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-300 rounded px-2 py-1 text-sm text-black"
-          >
-            <option value="">All Statuses</option>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="select-field !w-auto !py-1.5 text-xs">
+            <option value="">All statuses</option>
             <option value="open">Open</option>
             <option value="in_progress">In Progress</option>
             <option value="resolved">Resolved</option>
             <option value="closed">Closed</option>
           </select>
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value)}
-            className="border border-gray-300 rounded px-2 py-1 text-sm text-black"
-          >
-            <option value="">All Priorities</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
+          <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} className="select-field !w-auto !py-1.5 text-xs">
+            <option value="">All priorities</option>
             <option value="urgent">Urgent</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
           </select>
           {projectLabels.length > 0 && (
-            <select
-              value={labelFilter}
-              onChange={(e) => setLabelFilter(e.target.value)}
-              className="border border-gray-300 rounded px-2 py-1 text-sm text-black"
-            >
-              <option value="">All Labels</option>
+            <select value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)} className="select-field !w-auto !py-1.5 text-xs">
+              <option value="">All labels</option>
               {projectLabels.map((label) => (
                 <option key={label.id} value={label.id}>{label.name}</option>
               ))}
@@ -137,35 +152,44 @@ export default function RealtimeIssueList({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="p-12 text-center text-gray-500">
-          {issues.length === 0 ? 'No issues found. Create one to get started!' : 'No issues match the current filters.'}
+        <div className="px-5 py-16 text-center">
+          <p className="text-sm text-slate-400">
+            {issues.length === 0 ? 'No issues yet. Create one to get started.' : 'No issues match the current filters.'}
+          </p>
         </div>
       ) : (
-        <ul className="divide-y divide-gray-200">
+        <ul className="divide-y divide-slate-100">
           {filtered.map((issue) => (
-            <li key={issue.id} className="p-4 hover:bg-gray-50 transition">
-              <Link href={`/projects/${slug}/issues/${issue.id}`} className="block">
-                <div className="flex justify-between items-start mb-1 gap-2">
-                  <div className="flex items-center gap-2 flex-wrap min-w-0">
-                    <h4 className="font-bold text-lg text-black">{issue.title}</h4>
+            <li key={issue.id} className="group">
+              <Link href={`/projects/${slug}/issues/${issue.id}`} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50/50 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2.5 mb-1 flex-wrap">
+                    <span className="text-sm font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                      {issue.title}
+                    </span>
                     {issue.labels?.map((label) => (
                       <LabelBadge key={label.id} name={label.name} color={label.color} />
                     ))}
                   </div>
-                  <StatusBadge status={issue.status} />
-                </div>
-                <div className="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
-                  <span>Priority: <span className="capitalize font-medium text-black">{issue.priority}</span></span>
-                  <span>Created by {issue.creator?.full_name || issue.creator?.email || 'Unknown'}</span>
-                  {issue.assignee && (
-                    <span className="inline-flex items-center gap-1">
-                      <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center">
-                        {(issue.assignee.full_name || issue.assignee.email || '?')[0].toUpperCase()}
-                      </span>
-                      {issue.assignee.full_name || issue.assignee.email}
+                  <div className="flex items-center gap-3 text-xs text-slate-500">
+                    <span className={`inline-flex px-1.5 py-0.5 rounded font-medium capitalize ${priorityColors[issue.priority] || ''}`}>
+                      {issue.priority}
                     </span>
+                    <span>{issue.creator?.full_name || issue.creator?.email || 'Unknown'}</span>
+                    <span>{new Date(issue.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {issue.assignee && (
+                    <div
+                      className="w-7 h-7 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center justify-center"
+                      title={issue.assignee.full_name || issue.assignee.email || ''}
+                    >
+                      {getAssigneeInitial(issue.assignee)}
+                    </div>
                   )}
-                  <span>{new Date(issue.created_at).toLocaleDateString()}</span>
+                  <StatusBadge status={issue.status} />
+                  <ChevronRight size={16} className="text-slate-300 group-hover:text-slate-500 transition-colors" />
                 </div>
               </Link>
             </li>

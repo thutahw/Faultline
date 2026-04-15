@@ -3,9 +3,9 @@ import { describe, it, expect } from 'vitest'
 import Home from '@/app/page'
 
 describe('Home Page', () => {
-  it('renders the Faultline title', () => {
+  it('renders the hero heading', () => {
     render(<Home />)
-    const heading = screen.getByRole('heading', { name: /faultline/i })
+    const heading = screen.getByRole('heading', { name: /track issues/i })
     expect(heading).toBeInTheDocument()
   })
 

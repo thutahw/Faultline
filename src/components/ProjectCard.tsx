@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ArrowRight, AlertTriangle, Clock } from 'lucide-react'
 import StatsBar from './StatsBar'
 
 type ProjectStats = {
@@ -24,29 +25,50 @@ export default function ProjectCard({ project, stats }: { project: Project; stat
   return (
     <Link
       href={`/projects/${project.slug}`}
-      className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition bg-white text-black flex flex-col gap-3"
+      className="card p-5 hover:shadow-md hover:border-slate-300 transition-all duration-200 group flex flex-col"
     >
-      <h3 className="text-lg font-bold">{project.name}</h3>
-      <p className="text-sm text-gray-600 line-clamp-2">{project.description}</p>
+      <div className="flex items-start justify-between mb-3">
+        <div className="min-w-0">
+          <h3 className="text-base font-semibold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">
+            {project.name}
+          </h3>
+          {project.description && (
+            <p className="text-sm text-slate-500 mt-1 line-clamp-2 leading-relaxed">{project.description}</p>
+          )}
+        </div>
+        <ArrowRight size={16} className="text-slate-300 group-hover:text-indigo-500 transition-colors shrink-0 mt-1 ml-3" />
+      </div>
 
-      {s.total > 0 && (
-        <>
+      {s.total > 0 ? (
+        <div className="mt-auto pt-3 border-t border-slate-100">
           <StatsBar stats={s} />
-          <div className="flex gap-4 text-xs text-gray-500">
-            <span><span className="font-semibold text-green-600">{s.open}</span> open</span>
-            <span><span className="font-semibold text-blue-600">{s.in_progress}</span> in progress</span>
+          <div className="flex items-center gap-4 mt-2.5 text-xs text-slate-500">
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="font-medium text-slate-700">{s.open}</span> open
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-blue-500" />
+              <span className="font-medium text-slate-700">{s.in_progress}</span> active
+            </span>
             {s.urgent > 0 && (
-              <span><span className="font-semibold text-red-600">{s.urgent}</span> urgent</span>
+              <span className="flex items-center gap-1 text-amber-600">
+                <AlertTriangle size={11} />
+                <span className="font-medium">{s.urgent}</span> urgent
+              </span>
             )}
             {s.recent_7d > 0 && (
-              <span><span className="font-semibold text-gray-700">{s.recent_7d}</span> this week</span>
+              <span className="flex items-center gap-1 ml-auto">
+                <Clock size={11} />
+                {s.recent_7d} this week
+              </span>
             )}
           </div>
-        </>
-      )}
-
-      {s.total === 0 && (
-        <span className="text-xs text-gray-400">No issues yet</span>
+        </div>
+      ) : (
+        <div className="mt-auto pt-3 border-t border-slate-100">
+          <p className="text-xs text-slate-400">No issues yet</p>
+        </div>
       )}
     </Link>
   )

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { Plus, FolderOpen } from 'lucide-react'
 import ProjectCard from '@/components/ProjectCard'
 
 export default async function DashboardPage() {
@@ -17,7 +18,6 @@ export default async function DashboardPage() {
     .select('*')
     .order('created_at', { ascending: false })
 
-  // Fetch stats for each project
   const statsMap: Record<string, any> = {}
   if (projects) {
     await Promise.all(
@@ -29,36 +29,47 @@ export default async function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full">
-      <main className="w-full">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">My Projects</h2>
-          <Link
-            href="/projects/new"
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
-          >
-            New Project
+    <div className="page-container">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Projects</h1>
+          <p className="text-sm text-slate-500 mt-0.5">Manage and track your team&apos;s work</p>
+        </div>
+        <Link href="/projects/new" className="btn-primary flex items-center gap-2 text-sm">
+          <Plus size={16} />
+          New project
+        </Link>
+      </div>
+
+      {projectsError && (
+        <div className="card p-4 border-rose-200 bg-rose-50 text-sm text-rose-700 mb-6">
+          Error loading projects: {projectsError.message}
+        </div>
+      )}
+
+      {projects?.length === 0 ? (
+        <div className="card p-16 text-center">
+          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+            <FolderOpen size={20} className="text-slate-400" />
+          </div>
+          <h3 className="text-sm font-semibold text-slate-900 mb-1">No projects yet</h3>
+          <p className="text-sm text-slate-500 mb-5">Create your first project to start tracking issues.</p>
+          <Link href="/projects/new" className="btn-primary inline-flex items-center gap-2 text-sm">
+            <Plus size={16} />
+            New project
           </Link>
         </div>
-
-        {projectsError && <p className="text-red-500">Error loading projects: {projectsError.message}</p>}
-
-        {projects?.length === 0 ? (
-          <div className="border border-dashed border-gray-300 rounded-lg p-12 text-center text-gray-500">
-            You don&apos;t have any projects yet. Create one to get started!
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {projects?.map((project) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                stats={statsMap[project.id] || null}
-              />
-            ))}
-          </div>
-        )}
-      </main>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {projects?.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              stats={statsMap[project.id] || null}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

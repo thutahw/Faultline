@@ -6,30 +6,32 @@ type Stats = {
   total: number
 }
 
+const segments = [
+  { key: 'open' as const, color: '#10b981', label: 'Open' },
+  { key: 'in_progress' as const, color: '#3b82f6', label: 'In Progress' },
+  { key: 'resolved' as const, color: '#8b5cf6', label: 'Resolved' },
+  { key: 'closed' as const, color: '#94a3b8', label: 'Closed' },
+]
+
 export default function StatsBar({ stats }: { stats: Stats }) {
   if (stats.total === 0) return null
 
-  const segments = [
-    { key: 'open', count: stats.open, color: 'bg-green-500' },
-    { key: 'in_progress', count: stats.in_progress, color: 'bg-blue-500' },
-    { key: 'resolved', count: stats.resolved, color: 'bg-purple-500' },
-    { key: 'closed', count: stats.closed, color: 'bg-gray-400' },
-  ]
-
   return (
-    <div className="w-full h-2 rounded-full overflow-hidden flex bg-gray-100">
-      {segments.map((seg) => {
-        const pct = (seg.count / stats.total) * 100
-        if (pct === 0) return null
-        return (
-          <div
-            key={seg.key}
-            className={`${seg.color} h-full`}
-            style={{ width: `${pct}%` }}
-            title={`${seg.key.replace('_', ' ')}: ${seg.count}`}
-          />
-        )
-      })}
+    <div className="w-full">
+      <div className="flex h-1.5 rounded-full overflow-hidden bg-slate-100 gap-px">
+        {segments.map((seg) => {
+          const pct = (stats[seg.key] / stats.total) * 100
+          if (pct === 0) return null
+          return (
+            <div
+              key={seg.key}
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${pct}%`, backgroundColor: seg.color }}
+              title={`${seg.label}: ${stats[seg.key]}`}
+            />
+          )
+        })}
+      </div>
     </div>
   )
 }

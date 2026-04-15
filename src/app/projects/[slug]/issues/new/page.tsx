@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import Link from 'next/link'
 
 export default async function NewIssuePage({
   params,
@@ -11,9 +12,7 @@ export default async function NewIssuePage({
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/login')
-  }
+  if (!user) redirect('/login')
 
   const { data: project } = await supabase
     .from('projects')
@@ -21,9 +20,7 @@ export default async function NewIssuePage({
     .eq('slug', slug)
     .single()
 
-  if (!project) {
-    notFound()
-  }
+  if (!project) notFound()
 
   const projectId = project.id
 
@@ -78,9 +75,7 @@ export default async function NewIssuePage({
           label_id: labelId,
         })))
 
-      if (labelError) {
-        console.error(labelError)
-      }
+      if (labelError) console.error(labelError)
     }
 
     revalidatePath(`/projects/${slug}`)
@@ -88,81 +83,77 @@ export default async function NewIssuePage({
   }
 
   return (
-    <div className="flex flex-col p-4 sm:p-8 lg:p-12 max-w-7xl mx-auto w-full">
-      <div className="w-full max-w-xl">
-        <h1 className="text-3xl font-bold mb-8">New Issue for {project.name}</h1>
-        <form action={createIssue} className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <label htmlFor="title" className="font-semibold text-black">Title</label>
+    <div className="page-container">
+      <div className="max-w-lg">
+        <div className="mb-8">
+          <Link href={`/projects/${slug}`} className="text-sm text-slate-500 hover:text-slate-700 transition-colors">&larr; Back to {project.name}</Link>
+          <h1 className="text-xl font-bold text-slate-900 mt-3">New issue</h1>
+        </div>
+
+        <form action={createIssue} className="card p-6 space-y-5">
+          <div className="space-y-1.5">
+            <label htmlFor="title" className="label-text">Title</label>
             <input
               id="title"
               name="title"
               type="text"
               required
-              className="border p-2 rounded text-black"
+              className="input-field"
               placeholder="e.g. Navigation menu broken on mobile"
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label htmlFor="description" className="font-semibold text-black">Description</label>
+          <div className="space-y-1.5">
+            <label htmlFor="description" className="label-text">Description</label>
             <textarea
               id="description"
               name="description"
-              rows={6}
-              className="border p-2 rounded text-black"
+              rows={5}
+              className="input-field resize-none"
               placeholder="Provide more details about the issue..."
             />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label htmlFor="priority" className="font-semibold text-black">Priority</label>
-            <select
-              id="priority"
-              name="priority"
-              className="border p-2 rounded text-black"
-              defaultValue="medium"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label htmlFor="assignee_id" className="font-semibold text-black">Assignee</label>
-            <select
-              id="assignee_id"
-              name="assignee_id"
-              className="border p-2 rounded text-black"
-              defaultValue=""
-            >
-              <option value="">Unassigned</option>
-              {members?.map((member) => (
-                <option key={member.id} value={member.id}>
-                  {member.full_name || member.email}
-                </option>
-              ))}
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label htmlFor="priority" className="label-text">Priority</label>
+              <select id="priority" name="priority" className="select-field" defaultValue="medium">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="assignee_id" className="label-text">Assignee</label>
+              <select id="assignee_id" name="assignee_id" className="select-field" defaultValue="">
+                <option value="">Unassigned</option>
+                {members?.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.full_name || member.email}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {labels && labels.length > 0 && (
-            <div className="flex flex-col gap-2">
-              <span className="font-semibold text-black">Labels</span>
-              <div className="flex flex-wrap gap-3">
+            <div className="space-y-2">
+              <span className="label-text">Labels</span>
+              <div className="flex flex-wrap gap-2.5">
                 {labels.map((label) => (
-                  <label key={label.id} className="flex items-center gap-2 cursor-pointer">
+                  <label key={label.id} className="flex items-center gap-2 cursor-pointer group">
                     <input
                       type="checkbox"
                       name="labels"
                       value={label.id}
-                      className="rounded"
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                     />
                     <span
-                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                      style={{ backgroundColor: label.color + '20', color: label.color, borderColor: label.color + '40', borderWidth: 1 }}
+                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium group-hover:opacity-80 transition-opacity"
+                      style={{ backgroundColor: label.color + '14', color: label.color, boxShadow: `inset 0 0 0 1px ${label.color}30` }}
                     >
+                      <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: label.color }} />
                       {label.name}
                     </span>
                   </label>
@@ -171,19 +162,13 @@ export default async function NewIssuePage({
             </div>
           )}
 
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-6 py-3 rounded font-bold hover:bg-blue-700 transition"
-            >
-              Create Issue
+          <div className="flex gap-3 pt-2">
+            <button type="submit" className="btn-primary text-sm">
+              Create issue
             </button>
-            <a
-              href={`/projects/${slug}`}
-              className="bg-gray-200 text-black px-6 py-3 rounded font-bold hover:bg-gray-300 transition text-center"
-            >
+            <Link href={`/projects/${slug}`} className="btn-secondary text-sm">
               Cancel
-            </a>
+            </Link>
           </div>
         </form>
       </div>
